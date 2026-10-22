@@ -2,3 +2,5 @@
 out/
 bin/
 .idea/
+config.properties
+lib/

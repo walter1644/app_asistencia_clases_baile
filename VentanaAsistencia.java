@@ -18,12 +18,12 @@ import javax.swing.table.DefaultTableModel;
  * Ventana principal para registrar la asistencia a las clases de salsa.
  *
  * Flujo: se escribe nombre y apellido, se elige el nivel y se aprieta
- * "Registrar asistencia". La persona aparece en la tabla.
+ * "Registrar asistencia". La persona se guarda en la base (Aiven)
+ * y aparece en la tabla.
  */
 public class VentanaAsistencia extends JFrame {
 
     // ---------- Datos ----------
-    // “Una variable privada llamada listaAlumnos que solo guarda objetos de tipo Alumno, le asigno una lista nueva y vacía.”
     private ArrayList<Alumno> listaAlumnos = new ArrayList<>();
 
     // Los 6 niveles de las clases
@@ -32,72 +32,57 @@ public class VentanaAsistencia extends JFrame {
         "Intermedio", "Pre-avanzado", "Avanzado"
     };
 
-
     // ---------- Componentes de la interfaz ----------
-    private JTextField txtNombre = new JTextField(15); //renglon para anotar el nombre
-    private JTextField txtApellido = new JTextField(15); //renglon para anotar el apellido
-    private JComboBox<String> cmbNivel = new JComboBox<>(niveles); //ACTIVA LA LISTA DESPLEGABLE DE LOS NIVELES
-    private DefaultTableModel modeloTabla;   // guarda las filas de la tabla
-    private JTable tabla;                    // muestra las filas en pantalla
+    private JTextField txtNombre = new JTextField(15);
+    private JTextField txtApellido = new JTextField(15);
+    private JComboBox<String> cmbNivel = new JComboBox<>(niveles);
+    private DefaultTableModel modeloTabla;
+    private JTable tabla;
     private JLabel lblTotal = new JLabel("Total de asistentes: 0");
-
-
-
-
 
     // ---------- Constructor: arma toda la ventana ----------
     public VentanaAsistencia() {
-        setTitle("Asistencia - Clases de Salsa");// título de la ventana
-        setSize(900, 800); // tamaño de la ventana
-        setDefaultCloseOperation(EXIT_ON_CLOSE);  // cerrar la ventana termina el programa
-        setLocationRelativeTo(null);              // centrara la ventana en la pantalla
-        setLayout(new BorderLayout(10, 10));      // 5 zonas: NORTH, CENTER, SOUTH...
+        setTitle("Asistencia - Clases de Salsa");
+        setSize(900, 800);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(10, 10));
 
         add(crearPanelFormulario(), BorderLayout.NORTH);
         add(crearTabla(), BorderLayout.CENTER);
         add(crearPanelInferior(), BorderLayout.SOUTH);
+
+        cargarAlumnos();   // NUEVO: trae de la base los alumnos ya guardados
     }
 
-
-    // ---------- Metodo de la parte de arriba (norte): formulario ----------
+    // ---------- Parte de arriba (norte): formulario ----------
     private JPanel crearPanelFormulario() {
-        JPanel panel = new JPanel(new GridLayout(4, 2, 5, 5)); // 4 filas, 2 columnas
+        JPanel panel = new JPanel(new GridLayout(4, 2, 5, 5));
 
-        panel.add(new JLabel("  Nombre:")); //fila 1
+        panel.add(new JLabel("  Nombre:"));
         panel.add(txtNombre);
 
-        panel.add(new JLabel("  Apellido:")); //fila 2
+        panel.add(new JLabel("  Apellido:"));
         panel.add(txtApellido);
 
-        panel.add(new JLabel("  Nivel de la clase:")); //fila 3
+        panel.add(new JLabel("  Nivel de la clase:"));
         panel.add(cmbNivel);
 
-        // Botón: cuando se hace clic, se ejecuta registrarAsistencia()
-        JButton btnRegistrar = new JButton("Registrar asistencia"); //fila 4
+        JButton btnRegistrar = new JButton("Registrar asistencia");
         btnRegistrar.addActionListener(e -> registrarAsistencia());
-        panel.add(new JLabel(""));   // celda vacía para alinear el botón a la derecha
+        panel.add(new JLabel(""));
         panel.add(btnRegistrar);
 
         return panel;
     }
 
-
-
-
-
-
     // ---------- Centro: tabla con los asistentes ----------
     private JScrollPane crearTabla() {
         String[] columnas = {"Nombre", "Apellido", "Nivel"};
-        modeloTabla = new DefaultTableModel(columnas, 0); // 0 = empieza sin filas
+        modeloTabla = new DefaultTableModel(columnas, 0);
         tabla = new JTable(modeloTabla);
-        return new JScrollPane(tabla);  // JScrollPane agrega la barra de desplazamiento (solo se va a ver si hay muchas filas)
+        return new JScrollPane(tabla);
     }
-
-
-
-
-
 
     // ---------- Parte de abajo: total y botón eliminar ----------
     private JPanel crearPanelInferior() {
@@ -111,46 +96,63 @@ public class VentanaAsistencia extends JFrame {
         return panel;
     }
 
-
-
-
-
-
+    // ---------- NUEVO: cargar los alumnos guardados en la base ----------
+    private void cargarAlumnos() {
+        try {
+            for (Alumno a : AlumnoDAO.listar()) {
+                listaAlumnos.add(a);
+                modeloTabla.addRow(new Object[]{
+                    a.getNombre(), a.getApellido(), a.getNivel()
+                });
+            }
+            actualizarTotal();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "No se pudieron cargar los alumnos: " + ex.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
     // ---------- Acción: registrar asistencia ----------
     private void registrarAsistencia() {
-        // 1) Leer lo que escribió la persona (trim() borra espacios de más)
         String nombre = txtNombre.getText().trim();
         String apellido = txtApellido.getText().trim();
         String nivel = (String) cmbNivel.getSelectedItem();
 
-        // 2) Validar que no haya campos vacíos
         if (nombre.isEmpty() || apellido.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                     "Completá el nombre y el apellido.",
                     "Faltan datos", JOptionPane.WARNING_MESSAGE);
-            return;  // salimos del método sin registrar
+            return;
         }
 
-        // 3) Crear el objeto Alumno y guardarlo en la lista
-        Alumno alumno = new Alumno(nombre, apellido, nivel);
-        listaAlumnos.add(alumno);
+        try {
+            // 1) Guardar en la base (si falla, salta al catch y no se agrega nada)
+            AlumnoDAO.insertar(nombre, apellido, nivel);
 
-        // 4) Agregar una fila a la tabla para que se vea en pantalla
-        modeloTabla.addRow(new Object[]{
-            alumno.getNombre(), alumno.getApellido(), alumno.getNivel()
-        });
+            // 2) Recién ahora lo agregamos a la lista y a la tabla
+            Alumno alumno = new Alumno(nombre, apellido, nivel);
+            listaAlumnos.add(alumno);
+            modeloTabla.addRow(new Object[]{
+                alumno.getNombre(), alumno.getApellido(), alumno.getNivel()
+            });
 
-        // 5) Limpiar los campos y actualizar el total
-        txtNombre.setText("");
-        txtApellido.setText("");
-        txtNombre.requestFocus();   // el cursor vuelve al campo Nombre
-        actualizarTotal();
+            // 3) Limpiar los campos y actualizar el total
+            txtNombre.setText("");
+            txtApellido.setText("");
+            txtNombre.requestFocus();
+            actualizarTotal();
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo guardar: " + ex.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // ---------- Acción: eliminar la fila seleccionada ----------
     private void eliminarSeleccionado() {
-        int fila = tabla.getSelectedRow();   // -1 significa "no hay nada seleccionado"
+        int fila = tabla.getSelectedRow();
 
         if (fila == -1) {
             JOptionPane.showMessageDialog(this,
@@ -159,9 +161,22 @@ public class VentanaAsistencia extends JFrame {
             return;
         }
 
-        listaAlumnos.remove(fila);      // lo sacamos de la lista
-        modeloTabla.removeRow(fila);    // y de la tabla
-        actualizarTotal();
+        try {
+            Alumno alumno = listaAlumnos.get(fila);
+
+            // 1) Borrar de la base
+            AlumnoDAO.eliminar(alumno.getNombre(), alumno.getApellido());
+
+            // 2) Si salió bien, sacarlo de la lista y de la tabla
+            listaAlumnos.remove(fila);
+            modeloTabla.removeRow(fila);
+            actualizarTotal();
+
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo eliminar: " + ex.getMessage(),
+                    "Error de base de datos", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // ---------- Actualiza el texto del total ----------
@@ -171,7 +186,6 @@ public class VentanaAsistencia extends JFrame {
 
     // ---------- main: punto de entrada del programa ----------
     public static void main(String[] args) {
-        // Forma recomendada de abrir una ventana Swing
         SwingUtilities.invokeLater(() -> {
             new VentanaAsistencia().setVisible(true);
         });
