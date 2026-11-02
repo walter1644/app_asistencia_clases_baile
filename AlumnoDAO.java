@@ -20,14 +20,15 @@ public class AlumnoDAO {
             ps.executeUpdate();
         }
     }
-    public static void eliminar(String nombre, String apellido) throws Exception {
-        String sql = "DELETE FROM alumnos WHERE nombre = ? AND apellido = ?";
+    public static void eliminar(String nombre, String apellido, String nivel) throws Exception {
+        String sql = "DELETE FROM alumnos WHERE nombre = ? AND apellido = ? AND nivel = ?";
 
         try (Connection con = ConexionBDjava.conectar();
             PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, nombre);
             ps.setString(2, apellido);
+            ps.setString(3, nivel);
 
             ps.executeUpdate();
         }
@@ -51,8 +52,6 @@ public static List<Alumno> listar() throws Exception {
             Alumno a = new Alumno(nombre, apellido, nivel);
             alumnos.add(a);
         }
-    } catch (SQLException e) {
-        e.printStackTrace();
     }
     return alumnos;
 }

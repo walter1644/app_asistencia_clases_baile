@@ -165,7 +165,7 @@ public class VentanaAsistencia extends JFrame {
             Alumno alumno = listaAlumnos.get(fila);
 
             // 1) Borrar de la base
-            AlumnoDAO.eliminar(alumno.getNombre(), alumno.getApellido());
+            AlumnoDAO.eliminar(alumno.getNombre(), alumno.getApellido(), alumno.getNivel());
 
             // 2) Si salió bien, sacarlo de la lista y de la tabla
             listaAlumnos.remove(fila);
