@@ -26,11 +26,9 @@ public class VentanaAsistencia extends JFrame {
     // ---------- Datos ----------
     private ArrayList<Alumno> listaAlumnos = new ArrayList<>();
 
-    // Los 6 niveles de las clases
+    // Los 2 tipos de clases
     private String[] niveles = {
-        "Inicial", "Principiantes", "Pre-intermedio",
-        "Intermedio", "Pre-avanzado", "Avanzado"
-    };
+        "Salsa", "Bachata"};
 
     // ---------- Componentes de la interfaz ----------
     private JTextField txtNombre = new JTextField(15);
@@ -42,7 +40,7 @@ public class VentanaAsistencia extends JFrame {
 
     // ---------- Constructor: arma toda la ventana ----------
     public VentanaAsistencia() {
-        setTitle("Asistencia - Clases de Salsa");
+        setTitle("Asistencias de la clase");
         setSize(900, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -65,7 +63,7 @@ public class VentanaAsistencia extends JFrame {
         panel.add(new JLabel("  Apellido:"));
         panel.add(txtApellido);
 
-        panel.add(new JLabel("  Nivel de la clase:"));
+        panel.add(new JLabel("Clase:"));
         panel.add(cmbNivel);
 
         JButton btnRegistrar = new JButton("Registrar asistencia");
@@ -78,7 +76,7 @@ public class VentanaAsistencia extends JFrame {
 
     // ---------- Centro: tabla con los asistentes ----------
     private JScrollPane crearTabla() {
-        String[] columnas = {"Nombre", "Apellido", "Nivel"};
+        String[] columnas = {"Nombre", "Apellido", "Clase"};
         modeloTabla = new DefaultTableModel(columnas, 0);
         tabla = new JTable(modeloTabla);
         return new JScrollPane(tabla);
